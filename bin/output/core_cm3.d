@@ -1,0 +1,2 @@
+.\bin\output\core_cm3.o: CMSIS\core_cm3.c
+.\bin\output\core_cm3.o: G:\Keil\Keil_v5\ARM\ARMCC\Bin\..\include\stdint.h

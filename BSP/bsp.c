@@ -12,7 +12,6 @@ void BSP_Init(void)
 	DMA_Config();
 	LCD_Init();
 	KEY_GPIO_Config();
-//	LED_GPIO_Config();
 	DM13A_GPIO_Config();
 	Relay_Init();
 }

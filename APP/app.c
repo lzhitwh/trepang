@@ -1,6 +1,6 @@
 #include "includes.h"
 
-void Run_NotMaster(void);		//非主线程启动函数
+void Task_RunInit(void);		//任务初始化，包括其他任务以及相关参数初始化
 
 OS_STK TASK_KeyScan_Stk[TASK_KeyScan_Stk_Size];
 OS_STK TASK_Time_Stk[TASK_Time_Stk_Size];
@@ -8,23 +8,17 @@ OS_STK TASK_LcdDisplay_Stk[TASK_LcdDisplay_Stk_Size];
 OS_STK TASK_UpdateTime_Stk[TASK_UpdateTime_Stk_Size]; 
 OS_STK TASK_WtAndDp_Stk[TASK_WtAndDp_Stk_Size];
 
-OS_EVENT *Usart_Rec_Event;  	//定义串口接收信号量
-OS_EVENT *Key_Num_Event;  		//定义按键信号量
-OS_EVENT *Time_Run_Event;		//定义时间运行信号量，启动指示运行时间的函数
-OS_EVENT *Lcd_Display_Event;  	//定义液晶显示信号量
-OS_EVENT *Update_Time_Event;	//动态更新时间信号量
-OS_EVENT *Method_Other_Event;	//加水测试信号量
-
 void TASK_Master(void *p_arg)
 {
 	(void)p_arg;
 
-	Run_NotMaster();	//启动其他线程，主要包括液晶显示线程与按键检测线程
+	Task_RunInit();				//任务初始化，包括启动其它相关任务，以及初始化相关参数。
 	 	
 	while(1)
 	{
 		Set_Function();
 	}
+	OS_NO_ERR;
 }
 
 void TASK_KeyScan(void *p_arg)
@@ -43,7 +37,7 @@ void TASK_Time(void *p_arg)
 	(void)p_arg;
 	while(1)
 	{
-		OSSemPend(Time_Run_Event,0,&err);
+		OSSemPend(SemEventSet.Time_Run_Event,0,&err);
 		Time_RunMuch();
 //		OSTimeDlyHMSM(1,0,0,0);
 	}
@@ -55,7 +49,7 @@ void TASK_LcdDisplay(void *p_arg)
 	(void)p_arg;
 	while(1)
 	{
-		OSSemPend(Lcd_Display_Event,0,&err);
+		OSSemPend(SemEventSet.Lcd_Display_Event,0,&err);
 		HaiShen_Display();
 //		OSTimeDlyHMSM(1,0,0,0);
 	}
@@ -67,34 +61,36 @@ void TASK_UpdateTime(void *p_arg)
 	(void)p_arg;
 	while(1)
 	{
-		OSSemPend(Update_Time_Event,0,&err);
+		OSSemPend(SemEventSet.Update_Time_Event,0,&err);
 		Update_Time();
 //		OSTimeDlyHMSM(1,0,0,0);	
 	}
 }
 
 
-/***********************************************
-	功能：测试键与功能显示键任务
-***********************************************/
-void TASK_WtAndDp(void *p_arg)
-{
-	unsigned char err;
-	(void)p_arg;
-	for(;;)
-	{
-		OSSemPend(Method_Other_Event,0,&err);
-		LCD_DisplayGB2312(5,1,"进入提示模式");
-		Function_WaterAndDisplay();
-	}
-}
-
+///***********************************************
+//	功能：测试键与功能显示键任务
+//***********************************************/
+//void TASK_WtAndDp(void *p_arg)
+//{
+//	unsigned char err;
+//	(void)p_arg;
+//	for(;;)
+//	{
+//		OSSemPend(Method_Other_Event,0,&err);
+//		LCD_DisplayGB2312(5,1,"进入提示模式");
+//		Function_WaterAndDisplay();
+//	}
+//}
 
 /*
-	功能：运行前准备工作,包括启动其他其他线程。初始化相关变量。
+	功能：任务初始化,包括启动其他其他。初始化相关变量。
 */
-void Run_NotMaster(void)
+void Task_RunInit(void)
 {
+	/*
+			启动其他任务。
+	*/
 	OSTaskCreate(TASK_KeyScan,
 		         (void *)0,
 	              &TASK_KeyScan_Stk[TASK_KeyScan_Stk_Size-1],
@@ -112,14 +108,20 @@ void Run_NotMaster(void)
 				 &TASK_UpdateTime_Stk[TASK_UpdateTime_Stk_Size-1],
 				  TASK_UpdateTime_Prio);	//更新时间线程
 	
-	OSTaskCreate(TASK_WtAndDp,		    
-				 (void *)0,	
-				 &TASK_WtAndDp_Stk[TASK_WtAndDp_Stk_Size-1],
-				  TASK_WtAndDp_Prio);	//更新时间线程
+//	OSTaskCreate(TASK_WtAndDp,		    
+//				 (void *)0,	
+//				 &TASK_WtAndDp_Stk[TASK_WtAndDp_Stk_Size-1],
+//				  TASK_WtAndDp_Prio);	    //更新时间线程
 
-    Key_Num_Event = OSSemCreate(0);  
-	Time_Run_Event = OSSemCreate(0);	
-	Lcd_Display_Event = OSSemCreate(1);
-	Update_Time_Event = OSSemCreate(0);
-	Method_Other_Event = OSSemCreate(0);	
+	/*
+			信号量初始化
+	*/				
+    SemEventSet.Key_Num_Event = OSSemCreate(0);  
+	SemEventSet.Time_Run_Event = OSSemCreate(0);	
+	SemEventSet.Lcd_Display_Event = OSSemCreate(0); 	//液晶启动存在显示内容。
+	SemEventSet.Update_Time_Event = OSSemCreate(0);
+	SemEventSet.Method_Other_Event = OSSemCreate(0);
+
 }
+
+

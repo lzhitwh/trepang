@@ -46,9 +46,8 @@
 #include "15fifteen.h"
 #include "16sixteen.h"
 
-//#include "led.h"
 
 #define Haishen_OneStageTemLow		640
-#define Haishen_OneStageTemHight	880			
+#define Haishen_OneStageTemHight	880	
 
 #endif
